@@ -12,7 +12,11 @@ import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import AdminDashboard from './pages/AdminDashboard.jsx'
 import StaffDashboard from './pages/StaffDashboard.jsx'
-import { USER_ROLES } from './constants/api.jsx'
+import AccountManagement from './pages/AccountManagement.jsx'
+import SubscriptionManagement from './pages/SubscriptionManagement.jsx'
+import SessionManagement from './pages/SessionManagement.jsx'
+import StationManagement from './pages/StationManagement.jsx'
+import MaintenanceLog from './pages/MaintenanceLog.jsx'
 import { useAuth } from './context/AuthContext.jsx'
 
 function DashboardRouter() {
@@ -24,42 +28,57 @@ function DashboardRouter() {
         <Route
           path='/dashboard'
           element={
-            user?.role === USER_ROLES.ADMIN ? (
-              <AdminDashboard />
-            ) : (
-              <StaffDashboard />
-            )
+            user?.role === 'Admin' ? <AdminDashboard /> : <StaffDashboard />
           }
         />
 
         <Route
+          path='/accounts'
+          element={
+            <ProtectedRoute requiredRole='Admin'>
+              <AccountManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path='/subscriptions' element={<SubscriptionManagement />} />
+
+        <Route path='/sessions' element={<SessionManagement />} />
+
+        <Route
           path='/stations'
           element={
-            <ProtectedRoute requiredRole={USER_ROLES.ADMIN}>
-              <div className='p-6'>
-                <h1 className='text-2xl font-bold'>Charging Stations</h1>
-                <p>Stations management will be implemented here.</p>
-              </div>
+            <ProtectedRoute requiredRole='Admin'>
+              <StationManagement />
             </ProtectedRoute>
           }
         />
 
         <Route
-          path='/sessions'
+          path='/maintenance'
+          element={
+            <ProtectedRoute requiredRole='Admin'>
+              <MaintenanceLog />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/calendar'
           element={
             <div className='p-6'>
-              <h1 className='text-2xl font-bold'>Charging Sessions</h1>
-              <p>Sessions management will be implemented here.</p>
+              <h1 className='text-2xl font-bold'>Calendar</h1>
+              <p>Calendar view will be implemented here.</p>
             </div>
           }
         />
 
         <Route
-          path='/reports'
+          path='/packages'
           element={
             <div className='p-6'>
-              <h1 className='text-2xl font-bold'>Reports</h1>
-              <p>Reports will be implemented here.</p>
+              <h1 className='text-2xl font-bold'>Packages</h1>
+              <p>Package management will be implemented here.</p>
             </div>
           }
         />

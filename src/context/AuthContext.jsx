@@ -66,7 +66,21 @@ export function AuthProvider({ children }) {
     const token = authService.getStoredToken()
 
     if (token && storedUser) {
-      dispatch({ type: 'LOGIN_SUCCESS', payload: storedUser })
+      // Validate token by checking if it's expired
+      try {
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]))
+        const currentTime = Date.now() / 1000
+
+        if (tokenPayload.exp && tokenPayload.exp > currentTime) {
+          dispatch({ type: 'LOGIN_SUCCESS', payload: storedUser })
+        } else {
+          // Token expired, clear storage
+          authService.logout()
+        }
+      } catch (error) {
+        console.error('Token validation error:', error)
+        authService.logout()
+      }
     }
   }, [])
 

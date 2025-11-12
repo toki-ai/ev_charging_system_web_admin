@@ -1,8 +1,8 @@
 import axios from 'axios'
 
-// Base API URL for UserService
+// Base API URL for UserService via API Gateway
 const API_BASE_URL =
-  process.env.REACT_APP_USER_SERVICE_URL || 'https://localhost:5001/api'
+  process.env.REACT_APP_API_GATEWAY_URL || 'https://localhost:5000/api'
 
 // Create axios instance with base configuration
 const apiClient = axios.create({
@@ -31,14 +31,20 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid, clear storage and redirect
+      // Token expired or invalid, clear storage
       localStorage.removeItem('auth_token')
       localStorage.removeItem('user_data')
       sessionStorage.clear()
-      
-      // Only redirect if not already on login page
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
+
+      // Only redirect if not already on login page and not during initial load
+      if (
+        window.location.pathname !== '/login' &&
+        !window.location.pathname.includes('/login')
+      ) {
+        // Use timeout to avoid redirect conflicts
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 100)
       }
     }
     return Promise.reject(error)
@@ -59,32 +65,83 @@ export const authService = {
       // Store token
       localStorage.setItem('auth_token', token)
 
-      // Get user profile to get additional info
-      const profileResponse = await apiClient.get('/auth/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      const userProfile = profileResponse.data
-      const userData = {
+      // Create basic user data first
+      const basicUserData = {
         id: userId,
         email: email,
-        name: userProfile.fullName || email,
-        fullName: userProfile.fullName,
-        phone: userProfile.phone,
-        address: userProfile.address,
-        role: 'User', // Default role, update based on JWT claims if needed
+        name: email, // temporary fallback
       }
 
-      localStorage.setItem('user_data', JSON.stringify(userData))
+      try {
+        // Get user profile to get additional info
+        const profileResponse = await apiClient.get('/auth/profile', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
 
-      return {
-        success: true,
-        data: {
-          token,
-          user: userData,
-        },
+        const userProfile = profileResponse.data
+
+        // Parse JWT token to get role
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]))
+        const userRole =
+          tokenPayload[
+            'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+          ] || 'User'
+
+        const userData = {
+          id: userId,
+          email: email,
+          name: userProfile.fullName || email,
+          fullName: userProfile.fullName,
+          phone: userProfile.phone,
+          stationId: userProfile.stationId,
+          role: userRole,
+        }
+
+        localStorage.setItem('user_data', JSON.stringify(userData))
+
+        return {
+          success: true,
+          data: {
+            token,
+            user: userData,
+          },
+        }
+      } catch (profileError) {
+        console.warn('Failed to fetch profile, using basic data:', profileError)
+
+        // Parse JWT token to get role even if profile fails
+        try {
+          const tokenPayload = JSON.parse(atob(token.split('.')[1]))
+          const userRole =
+            tokenPayload[
+              'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+            ] || 'User'
+
+          const fallbackUserData = {
+            ...basicUserData,
+            role: userRole,
+          }
+
+          localStorage.setItem('user_data', JSON.stringify(fallbackUserData))
+
+          return {
+            success: true,
+            data: {
+              token,
+              user: fallbackUserData,
+            },
+          }
+        } catch (tokenError) {
+          console.error('Failed to parse token:', tokenError)
+          // Clear invalid token
+          localStorage.removeItem('auth_token')
+          return {
+            success: false,
+            error: 'Invalid token received. Please try again.',
+          }
+        }
       }
     } catch (error) {
       console.error('Login error:', error)
@@ -144,10 +201,10 @@ export const authService = {
       // Clear all authentication data
       localStorage.removeItem('auth_token')
       localStorage.removeItem('user_data')
-      
+
       // Clear any other stored data if needed
       sessionStorage.clear()
-      
+
       console.log('User logged out successfully')
     } catch (error) {
       console.error('Error during logout:', error)
@@ -157,7 +214,18 @@ export const authService = {
   // Check if user is authenticated
   isAuthenticated() {
     const token = localStorage.getItem('auth_token')
-    return !!token
+    if (!token) return false
+
+    try {
+      // Check if token is expired
+      const tokenPayload = JSON.parse(atob(token.split('.')[1]))
+      const currentTime = Date.now() / 1000
+
+      return tokenPayload.exp && tokenPayload.exp > currentTime
+    } catch (error) {
+      console.error('Token validation error:', error)
+      return false
+    }
   },
 
   // Get stored user data

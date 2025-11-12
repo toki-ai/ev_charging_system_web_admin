@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import Sidebar from './Sidebar.jsx'
-import Navbar from './Navbar.jsx'
 
 export default function DashboardLayout({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -26,11 +25,6 @@ export default function DashboardLayout({ children }) {
       )}
 
       <div className='flex flex-col w-0 flex-1 overflow-hidden md:ml-72'>
-        <Navbar
-          onMobileMenuToggle={toggleMobileMenu}
-          isMobileMenuOpen={isMobileMenuOpen}
-        />
-
         <main className='flex-1 relative overflow-y-auto focus:outline-none'>
           <div className='py-8'>
             <div className='max-w-7xl mx-auto px-6 sm:px-8 lg:px-10'>

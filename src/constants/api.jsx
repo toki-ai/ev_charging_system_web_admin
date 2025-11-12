@@ -1,6 +1,6 @@
 // API Configuration
 export const API_BASE_URL =
-  process.env.REACT_APP_API_URL || 'https://localhost:7000/api'
+  process.env.REACT_APP_API_URL || 'https://localhost:5000/api'
 
 export const API_ENDPOINTS = {
   // Authentication
@@ -41,16 +41,6 @@ export const API_ENDPOINTS = {
     STOP: (id) => `/sessions/${id}/stop`,
   },
 
-  // Reports
-  REPORTS: {
-    GET_ALL: '/reports',
-    CREATE: '/reports',
-    GET_TECHNICAL: '/reports/technical',
-    GET_MAINTENANCE: '/reports/maintenance',
-    GET_USAGE: '/reports/usage',
-    GET_REVENUE: '/reports/revenue',
-  },
-
   // Packages
   PACKAGES: {
     GET_ALL: '/packages',
@@ -71,10 +61,4 @@ export const SESSION_STATUS = {
   COMPLETED: 'Completed',
   CANCELLED: 'Cancelled',
   PAUSED: 'Paused',
-}
-
-export const REPORT_TYPES = {
-  TECHNICAL: 'Technical',
-  MAINTENANCE: 'Maintenance',
-  ISSUE: 'Issue',
 }

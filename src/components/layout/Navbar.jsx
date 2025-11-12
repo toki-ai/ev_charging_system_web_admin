@@ -7,8 +7,12 @@ export default function Navbar({ onMobileMenuToggle, isMobileMenuOpen }) {
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const handleLogout = async () => {
-    await logout()
-    setShowUserMenu(false)
+    try {
+      setShowUserMenu(false) // Close menu first
+      await logout()
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
   }
 
   return (
